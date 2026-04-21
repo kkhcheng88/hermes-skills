@@ -1,0 +1,70 @@
+# WallStreetCN Watchlist
+# Add stocks, sectors, and keywords you want to track.
+# Items matching watchlist entries get 🔥 priority in streaming alerts.
+
+stocks:
+  # US Tech
+  - TSLA
+  - NVDA
+  - AAPL
+  - MSFT
+  - AMD
+  - META
+  - GOOGL
+  - AMZN
+
+  # HK Stocks (if interested)
+  # - 0700.HK
+  # - 9988.HK
+
+sectors:
+  - AI
+  - 半导体
+  - 新能源
+  - 电动车
+  - 芯片
+  - 云计算
+  - 油气
+
+keywords:
+  # Chinese names of stocks
+  - 特斯拉
+  - 英伟达
+  - 苹果
+  - 微软
+  - 谷歌
+  - 亚马逊
+  - 脸书
+  - AMD
+
+  # Key terms
+  - 光模块
+  - GPU
+  - 自动驾驶
+  - 机器人
+  - 大模型
+  - ChatGPT
+
+  # Commodities
+  - 原油
+  - 油价
+  - 黄金
+  - 白银
+  - 天然气
+  - 铜
+  - OPEC
+
+  # Macro
+  - 美联储
+  - Fed
+  - 加息
+  - 降息
+  - 非农
+  - CPI
+  - GDP
+  - 国债收益率
+
+# Notifications
+# 'strict' = only high-importance items pushed immediately
+# 'normal' = medium+ importance pushed immediately
+threshold: normal

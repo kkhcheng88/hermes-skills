@@ -1,0 +1,34 @@
+# hermes-skills requirements
+# Install: pip install --break-system-packages -r requirements.txt
+#
+# Core data & analysis
+yfinance>=0.2.0
+pandas>=2.0
+numpy>=1.24
+ta>=0.11.0                    # Technical analysis (RSI, MACD, Bollinger, etc.)
+
+# Web scraping & content
+beautifulsoup4>=4.12
+requests>=2.31
+lxml>=4.9
+pyyaml>=6.0
+
+# Visualization
+matplotlib>=3.7
+
+# NotebookLM integration (content-to-notebooklm skill)
+notebooklm-py>=0.3.0          # pip install git+https://github.com/teng-lin/notebooklm-py.git
+markitdown[all]>=0.1.0        # File format conversion (PDF, DOCX, EPUB, etc.)
+ebooklib>=0.20                 # EPUB support
+
+# Facebook scraping (facebook-page-scraper skill)
+playwright>=1.40               # Also run: python3 -m playwright install chromium
+
+# MCP server (WeChat/Feishu article scraping)
+fastmcp>=3.0
+aiohttp>=3.9
+aiofiles>=23.0
+Pillow>=10.0
+
+# YouTube transcript
+youtube-transcript-api>=1.0

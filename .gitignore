@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Environment
+.env
+.env.*
+*.env
+
+# Data & state
+data/
+*.json
+!**/SKILL.md
+!**/*.py
+!**/*.sh
+!**/*.md
+cookies.json
+*_state.json
+tokens.json
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Node (if any)
+node_modules/
+package-lock.json
+
+# Playwright
+.cache/
+*.log
