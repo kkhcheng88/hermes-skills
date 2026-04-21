@@ -1,31 +1,56 @@
 ---
 name: stock-analysis
 description: "Ad-hoc stock analysis: yfinance + ta + TradingKey (mandatory) + Agent frameworks (Lynch/Marks/Miller/Munger/Greenblatt). 5-layer pipeline for US stocks. Buy&hold ≤1yr."
-version: 1.0.0
+version: 2.0.0
 metadata:
   hermes:
     tags: [stocks, analysis, technical-analysis, fundamentals, yfinance, ta, options]
 ---
 
-# Stock Analysis (yfinance + ta)
+# Stock Analysis Pipeline
 
-Ad-hoc stock analysis for any ticker. Uses `yfinance` for data and `ta` library for technical indicators.
+Ad-hoc stock analysis for any US ticker. 5-layer pipeline developed through iterative testing on AXTI, TSLA, MU, POET, AAOI, PFE, LLY, INTC.
 
 ## Dependencies
 
 ```bash
-pip install yfinance ta
+pip install --break-system-packages yfinance ta beautifulsoup4 requests
 ```
 
-## Pipeline (5 layers)
+## Pipeline (5 Layers — ALL mandatory)
 
-### Layer 1: yfinance — Price & Fundamentals
-Use `yf.Ticker("SYMBOL")` for company info, fundamentals, analyst consensus, options chain.
+### Layer 1: yfinance — Price, Fundamentals & Technicals
 
-### Layer 2: ta library — Technical Indicators
-RSI, MACD, Bollinger Bands, ATR, Stochastic, MA20/MA50 cross, support/resistance.
+```python
+import yfinance as yf
+import ta
 
-### Layer 3: TradingKey — AI Analysis (MANDATORY reference)
+t = yf.Ticker("SYMBOL")
+info = t.info
+hist = t.history(period="1y")  # 1y for enough MA data
+close, high, low = hist['Close'], hist['High'], hist['Low']
+current = float(close.iloc[-1])
+```
+
+**Extract from `info`:** longName, sector, industry, marketCap, trailingPE, forwardPE, priceToBook, totalRevenue, grossMargins, profitMargins, operatingMargins, returnOnEquity, debtToEquity, currentRatio, freeCashflow, revenueGrowth, earningsGrowth, recommendationKey, targetMeanPrice/High/Low, numberOfAnalystOpinions, fiftyTwoWeekHigh/Low, averageVolume.
+
+**Technical indicators (ta library):**
+```python
+rsi = ta.momentum.RSIIndicator(close, 14).rsi().iloc[-1]
+macd = ta.trend.MACD(close)
+macd_cross = "golden" if macd.macd().iloc[-1] > macd.macd_signal().iloc[-1] else "death"
+bb = ta.volatility.BollingerBands(close, 20)
+bb_pos = (current - bb.bollinger_lband().iloc[-1]) / (bb.bollinger_hband().iloc[-1] - bb.bollinger_lband().iloc[-1])
+atr = ta.volatility.AverageTrueRange(high, low, close, 14).average_true_range().iloc[-1]
+stoch = ta.momentum.StochasticOscillator(high, low, close)
+ma20 = float(close.rolling(20).mean().iloc[-1])
+ma50 = float(close.rolling(50).mean().iloc[-1]) if len(close) >= 50 else None
+ma200 = float(close.rolling(200).mean().iloc[-1]) if len(close) >= 200 else None
+recent_low = float(low.tail(20).min())
+recent_high = float(high.tail(20).max())
+```
+
+### Layer 2: TradingKey — AI Analysis (MANDATORY)
 
 ```python
 import urllib.request, json
@@ -33,120 +58,150 @@ import urllib.request, json
 route = f"nasdaq-{symbol.lower()}"
 url = f"https://api.tradingkey.com/quotes-base/diagnosis/v1/stock-score?route={route}"
 req = urllib.request.Request(url, headers={
-    'User-Agent': 'Mozilla/5.0',
-    'Accept': 'application/json',
-    'Referer': 'https://www.tradingkey.com/',
-    'Origin': 'https://www.tradingkey.com',
+    'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json',
+    'Referer': 'https://www.tradingkey.com/', 'Origin': 'https://www.tradingkey.com',
 })
-data = json.loads(urllib.request.urlopen(req, timeout=15).read())["value"]
+v = json.loads(urllib.request.urlopen(req, timeout=15).read())["value"]
 ```
 
-Extract: totalScore, industryRank, 6 dimension scores + descriptions, highlights/risks (labelList), support/resistance, sentiment, analyst rating, operational suggestion.
+**Extract:**
+- `v['score']['totalScore']` — 0-10 composite
+- `v['score']['industryRank']` / `marketRank` — rankings
+- 6 dimension scores: revenueForecasts, financialDiagnostics, priceMomentum, riskAssessment, institutionalRecognition, companyValuation
+- `v['suggests']['stockSuggest']` — operational recommendation
+- `v['labelList']` — highlights (labelType=1) and risks (labelType=2)
+- `v['pressure']` / `v['support']` — resistance/support levels
+- `v['companySentiment']` — sentiment score and heat
+- `v['agencyRating']` — rating, targetPrice, priceSpace, total analysts
 
-**TradingKey is mandatory but not the bible** — reference alongside other data, don't treat as sole source of truth.
+**⚠️ TradingKey is mandatory but NOT the bible.** Reference alongside other data. Sometimes its valuation score conflicts with fundamental analysis (e.g., AXTI scored 8.3/10 valuation but stock was 3x analyst target).
 
-### Layer 4: Agent Frameworks (FinceptTerminal-inspired)
+### Layer 3: Agent Frameworks (1-year horizon)
 
-Karson's buy & hold horizon = max 1 year. Buffett long-term framework NOT applicable.
+Karson's buy & hold horizon = max 1 year. **Buffett framework does NOT apply** (too long-term). Graham too conservative for growth stocks.
 
-**Priority order:**
-1. **Lynch (PEG + Story)** — PRIMARY. PEG = fwd P/E ÷ EPS growth. ≤1.0 bullish, >1.5 reject. Story test: can non-finance person repeat thesis?
-2. **Marks (Cycle)** — 6-bucket cycle positioning. Second-level thinking. Humility statement.
-3. **Miller (Contrarian + FCF)** — out-of-favor test, FCF yield, SBC/FCF <50%.
-4. **Munger (Inversion)** — "how to lose money?" 3-5 ways, lollapalooza check.
-5. **Greenblatt (Magic Formula)** — ROC ≥15%, EY ≥8%, pure rules-based.
+**Priority order (Lynch first):**
 
-Lower priority: Graham (too conservative), Klarman (VIX high only), Buffett (horizon too long).
-
-### Layer 5: News
-yfinance `t.news` + Google News RSS for recent coverage.
-
-## Analysis Output Structure
-
-```
-📊 [SYMBOL] 完整分析
-
-🏢 公司簡介
-  名稱, Sector, Industry, 市值, 員工數
-
-📈 股價資訊
-  現價, 52週高/低, 50MA, 200MA
-
-💰 基本面
-  P/E (TTM + Forward), P/B, Revenue, Gross/Net Margin, Debt/Equity, Current Ratio
-
-🎯 Analyst 共識
-  Recommendation, Mean/High/Low PT, # Analysts
-
-📐 技術分析
-  RSI(14), MACD + Signal + 金叉/死叉, Bollinger Bands (Upper/Middle/Lower)
-  ATR(14), Stochastic K/D
-  支撐/壓力 (20日), MA20/MA50 趨勢, 黃金交叉/死亡交叉
-
-📋 期權鏈 (如適用)
-  最近 3 個到期日嘅 ATM calls — Bid/Ask/IV/Volume
-```
-
-## Code Template
-
+#### 🥇 Lynch (PEG + Story) — PRIMARY
 ```python
-import yfinance as yf
-import pandas as pd
-import ta
+peg = fwd_pe / (earnings_growth * 100)  # if earnings_growth > 0
+# PEG ≤ 1.0 → bullish
+# PEG > 1.5 → reject
+# No positive earnings → PEG N/A → check story only
+```
+- Classify: Slow Grower / Stalwart / Fast Grower / Cyclical / Turnaround / Asset Play
+- **Story test**: can a non-finance person repeat the thesis in one sentence?
+- Cyclicals: use cycle-averaged earnings, not trough PEG
 
-ticker = yf.Ticker("SYMBOL")
-info = ticker.info
-hist = ticker.history(period="6mo")
+#### 🥈 Marks (Cycle Positioning)
+- 6-bucket cycle: early_bull → late_bear
+- Second-level thinking: state consensus, then what consensus misses
+- **Humility statement mandatory**: name what you DON'T know
+- Credit leads equity: HY spreads, default rates
 
-# Fundamentals from info dict
-price = info.get('currentPrice', info.get('regularMarketPrice'))
-pe = info.get('trailingPE')
-fpe = info.get('forwardPE')
-pb = info.get('priceToBook')
-revenue = info.get('totalRevenue', 0) / 1e6
-gross_margin = info.get('grossMargins', 0) * 100
-net_margin = info.get('profitMargins', 0) * 100
-de_ratio = info.get('debtToEquity')
+#### 🥈 Miller (Contrarian + FCF)
+- Must be currently out-of-favor
+- FCF yield (levered, post SBC)
+- SBC ≥ 50% of FCF = reject
+- Network effects: none/weak/moderate/strong
 
-# Technical analysis
-close = hist['Close']
-high = hist['High']
-low = hist['Low']
-current = float(close.iloc[-1])
+#### 🥉 Munger (Inversion)
+- "How do I lose money?" — 3-5 specific ways
+- Lollapalooza check: multiple reinforcing failure factors = high conviction to avoid
+- Circle of competence: declining out-of-competence is correct behavior
 
-rsi = ta.momentum.RSIIndicator(close, window=14).rsi().iloc[-1]
-macd_ind = ta.trend.MACD(close)
-macd_val = macd_ind.macd().iloc[-1]
-signal_val = macd_ind.macd_signal().iloc[-1]
-bb = ta.volatility.BollingerBands(close, window=20)
-atr = ta.volatility.AverageTrueRange(high, low, close, window=14).average_true_range().iloc[-1]
-stoch = ta.momentum.StochasticOscillator(high, low, close)
+#### 🥉 Greenblatt (Magic Formula)
+- ROC = EBIT / (NWC + net fixed assets) ≥ 15%
+- Earnings Yield = EBIT / EV ≥ 8%
+- Pure rules-based — narrative does NOT override
 
-# Support/Resistance
-recent_low = float(low.tail(20).min())
-recent_high = float(high.tail(20).max())
-ma20 = float(close.rolling(20).mean().iloc[-1])
-ma50 = float(close.rolling(50).mean().iloc[-1]) if len(close) >= 50 else None
+**Lower priority (use situationally):**
+- Graham — too conservative, rejects almost all growth stocks
+- Klarman — only when VIX high / regime A
+- Eveillard — bubble check for sectors
+
+### Layer 4: News
+```python
+# yfinance news
+news = yf.Ticker("SYMBOL").news
+
+# Google News RSS
+import xml.etree.ElementTree as ET
+url = f"https://news.google.com/rss/search?q={SYMBOL}+stock&hl=en-US&gl=US&ceid=US:en"
+root = ET.fromstring(urllib.request.urlopen(url, timeout=10).read())
 ```
 
-## Karson's Option Rules (ALWAYS FOLLOW)
+### Layer 5: Synthesis
+Cross-reference all layers. Flag conflicts (e.g., TradingKey says buy but agents say avoid).
 
-- **PMCC** → SPY only
-- **CSP systematic** → QQQ only
-- **Sell Put (其他股)** → ONLY when all 3 conditions met:
+---
+
+## Options Rules (STRICT — always follow)
+
+- **PMCC** → SPY ONLY
+- **CSP systematic** → QQQ ONLY
+- **Sell Put (individual stocks)** → ALL 3 conditions must be met:
   1. IV is high (good premium)
-  2. He actually wants to own the stock (willing to be assigned)
+  2. Genuinely want to own the stock (willing to be assigned)
   3. Premium justifies the risk
-- For non-SPY/QQQ stocks: show options data but don't recommend PMCC/CSP unless conditions met
+- For non-SPY/QQQ: show options chain data but DON'T recommend PMCC/CSP
 
-## ta Library Quick Reference
+---
 
-| Indicator | Code | Interpretation |
-|-----------|------|----------------|
-| RSI(14) | `ta.momentum.RSIIndicator(close, 14).rsi()` | >70 overbought, <30 oversold |
-| MACD | `ta.trend.MACD(close)` | `.macd()`, `.macd_signal()`, `.macd_diff()` |
-| Bollinger | `ta.volatility.BollingerBands(close, 20)` | `.bollinger_hband()`, `.bollinger_mavg()`, `.bollinger_lband()` |
-| ATR | `ta.volatility.AverageTrueRange(high, low, close, 14)` | `.average_true_range()` — volatility measure |
-| Stochastic | `ta.momentum.StochasticOscillator(high, low, close)` | `.stoch()`, `.stoch_signal()` |
-| SMA | `close.rolling(N).mean()` | Simple moving average |
-| EMA | `ta.trend.EMAIndicator(close, N).ema_indicator()` | Exponential moving average |
+## Analysis Output Format
+
+```
+📊 [SYMBOL] — [Company Name] | $[Price] | MCap: $[X]B/M
+
+【Lynch — PEG + Story】
+  分類: [Fast Grower/Cyclical/Turnaround/etc.]
+  PEG: [X.XX] ✅/❌
+  Story test: [one sentence thesis]
+  Verdict: [BULLISH/NEUTRAL/REJECT]
+
+【Marks — Cycle】
+  Cycle: [bucket position]
+  Key signals: [...]
+  Second-level: [what consensus misses]
+  Humility: [what I don't know]
+  Verdict: [...]
+
+【Miller — Contrarian + FCF】
+  Contrarian test: [yes/no]
+  FCF yield: [X.X%]
+  Verdict: [...]
+
+【Munger — Inversion】
+  How to lose money: [3-5 ways]
+  Lollapalooza: [X/5 factors]
+  Verdict: [...]
+
+【Greenblatt — Magic Formula】
+  ROC: [X%] | EY: [X%]
+  Verdict: [...]
+
+⭐ TradingKey: [X.XX/10] | 行業 [X/Y] | 市場 [X/Y]
+  Highlights: [...]
+  Risks: [...]
+  Analyst: [Rating] | PT: $[X] | 空間: [X%]
+
+📐 技術面: RSI [X] | MACD [cross] | 趨勢 [up/down]
+  支撐: $[X] | 壓力: $[X]
+
+🎯 最終 Verdict + 行動建議
+```
+
+---
+
+## Key Learnings (from testing on 8 stocks)
+
+| Stock | Lesson |
+|-------|--------|
+| AXTI | Story was stronger than agent frameworks suggested — TradingKey caught what yfinance missed ($1.2→$78 momentum has AI optical interconnect story) |
+| AAOI | Similar to AXTI but with real revenue ($455M). Institutional SELLING while retail buys = late cycle signal |
+| TSLA | 8/10 agents reject at current valuation. Only Lynch story test passes. Wait for $200 |
+| MU | Lynch PEG 0.02 + Greenblatt top rank. Best quantitative score. But DRAM cycle risk — watch spot price |
+| PFE | Miller contrarian FCF yield 8.6%. Value trap risk if no catalyst. Seagen pipeline = potential re-rate |
+| LLY | Lynch PEG 0.42 = best GARP score in the group. GLP-1 mid-cycle adoption |
+
+**Pattern discovered:** For AI/semiconductor supply chain stocks (AXTI, AAOI, POET), traditional value frameworks (Buffett, Graham, Greenblatt) all reject them, but Lynch story test + Marks cycle positioning capture the opportunity. Must supplement with TradingKey to catch the narrative.
