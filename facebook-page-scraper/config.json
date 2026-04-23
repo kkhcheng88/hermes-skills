@@ -1,0 +1,16 @@
+{
+  "pages": [
+    "wsj",
+    "bloombergbusiness",
+    "Reuters",
+    "FinancialTimes",
+    "TheEconomist"
+  ],
+  "categories": {
+    "macro": ["wsj", "bloombergbusiness", "Reuters"],
+    "investment": ["FinancialTimes", "TheEconomist"]
+  },
+  "scrape_interval_hours": 6,
+  "max_posts_per_page": 10,
+  "new_only": true
+}

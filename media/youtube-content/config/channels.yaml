@@ -1,0 +1,81 @@
+# YouTube Channel Monitor Config
+# Organized by Karson's categories
+# report: true = include in daily report, false = monitor only
+
+channels:
+  # ── Category 1: 被動收入 / 固收 / 低風險 ──────────────
+  # Monitor only, no daily report
+  - handle: "@LouBestHK"
+    name: "LouBestHK"
+    category: passive-income
+    description: 港股ETF/派息分析
+    report: false
+    transcript: layer1
+    language: zh-Hant, yue
+
+  - handle: "@25y.retirement"
+    name: "25y.retirement"
+    category: passive-income
+    description: 宏觀/退休投資
+    report: false
+    transcript: layer1
+    language: zh-HK, yue
+
+  # ── Category 2: 投資理念 / 基本面知識 ──────────────
+  # Monitor only, no daily report
+  - handle: "@AhJu"
+    name: "AhJu"
+    category: investment-ideas
+    description: AI/科技投資見解
+    report: false
+    transcript: layer1
+    language: yue-HK, yue
+
+  - handle: "@andyyan"
+    name: "andyyan"
+    category: investment-ideas
+    description: 交易心理學 (Mark Douglas)
+    report: false
+    transcript: layer1
+    language: yue
+
+  # ── Category 3: 技術知識 / 指標 / 社群 ──────────────
+  # Monitor only, no daily report
+  - handle: "@speculation"
+    name: "speculation"
+    category: technical-knowledge
+    description: 產業鏈/灰產分析
+    report: false
+    transcript: layer1
+    language: zh-Hans
+
+  - handle: "@BacktestEverything"
+    name: "BacktestEverything"
+    category: technical-knowledge
+    description: 量化回測/交易策略
+    report: false
+    transcript: layer1
+    language: en
+
+  # ── Category 4: 最新市場新聞 / 行業分析 (每日報告用) ──
+  # Include in daily report
+  - handle: "@KelileoCUP"
+    name: "KelileoCUP"
+    category: market-news
+    description: 港股/美股市場分析
+    report: true
+    transcript: layer1
+    language: zh-Hant, yue
+
+  - handle: "@KoluniteVIP"
+    name: "KoluniteVIP"
+    category: market-news
+    description: 加密貨幣市場分析
+    report: true
+    transcript: layer1
+    language: zh
+
+# SKIP channels (no transcript available)
+# - @stockruhigah — 冇字幕
+# - @老李玩钱 — 冇字幕
+# - @TradingKey_ZH — 冇字幕
