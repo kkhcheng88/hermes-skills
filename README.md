@@ -21,6 +21,7 @@ This repo contains all custom-built skills for **Kars**, a personal AI assistant
 | **Portfolio Charter Review** | `research/portfolio-charter-review/` | Portfolio vs investment charter alignment check |
 | **Website SEO Review** | `research/website-seo-design-review/` | Website SEO and design analysis |
 | **Stock Analysis** | `stock-analysis/` | Ad-hoc stock analysis framework |
+| **YouTube Transcript Extractor** | `research/youtube-transcript-extractor/` | Extract YouTube video transcripts/subtitles via Puppeteer + Chrome debugging port |
 
 ### 🔄 Content & Automation
 
@@ -36,6 +37,31 @@ This repo contains all custom-built skills for **Kars**, a personal AI assistant
 | **Hermes Gateway Troubleshooting** | `devops/hermes-gateway-troubleshooting/` | Debug and fix gateway connection issues |
 | **Hermes Skills Audit** | `devops/hermes-skills-audit/` | Audit installed skills for health and dependencies |
 | **Third-Party Skill Installer** | `devops/third-party-skill-installer/` | Install and manage third-party skills |
+
+---
+
+### 🔎 YouTube Transcript Extractor — Details
+
+**Directory:** `research/youtube-transcript-extractor/`
+
+**Features:**
+- Search YouTube videos by keyword and extract transcripts (逐字稿)
+- Batch extraction for multiple videos
+- Uses Chrome DevTools Protocol (port 9222) for reliable extraction
+- Supports both single video and search-based workflows
+
+**Trigger Words:**
+- 「提取 YouTube transcript」
+- 「搜尋 YouTube 影片」
+- 「提取字幕」
+- 「YouTube 逐字稿」
+
+**Usage:**
+1. Start Chrome with remote debugging: `chrome --remote-debugging-port=9222`
+2. Invoke the skill with a search query or video URL
+3. Transcripts are extracted and saved as text files
+
+**Core Tech:** Puppeteer automation + Chrome DevTools Protocol (CDP) on port 9222
 
 ---
 
@@ -189,6 +215,7 @@ These are upstream clones or environment-specific and NOT synced:
 | notebooklm-py | content-to-notebooklm |
 | fastmcp | content-to-notebooklm (MCP server) |
 | youtube-transcript-api | discord-kol, youtube-content |
+| puppeteer | youtube-transcript-extractor |
 | pandas | everywhere |
 | requests | tradingkey, wallstreetcn |
 
