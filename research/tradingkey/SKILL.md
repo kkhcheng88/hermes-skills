@@ -1,7 +1,25 @@
 ---
 name: tradingkey
-description: Fetch TradingKey's proprietary stock analysis — composite score, multi-dimensional ratings, buy/sell suggestions, highlights/risks, support/resistance, sentiment, and related news. No API key required. US stocks only (NASDAQ/NYSE). Use when Karson asks for stock scoring, TradingKey analysis, or operational suggestions for US stocks. For price/fundamentals use yfinance instead.
-version: 2.0.0
+description: Fetch TradingKey's proprietary stock analysis and news — composite score, multi-dimensional ratings, buy/sell suggestions, highlights/risks, support/resistance, sentiment, and stock-specific news. No API key required. US stocks only (NASDAQ/NYSE). PRIMARY SOURCE for stock news. Data is English (API) + Chinese news (HTML). For price/fundamentals use yfinance instead.
+version: 2.1.0
+notes: |
+  ## Implementation Files
+  
+  - `tradingkey_fetcher.py` — Production-ready Python module with `TradingKeyFetcher` class
+    - `get_stock_analysis()` — Fetch score, dimensions, labels, support/resistance, sentiment, agency rating
+    - `get_news(limit=6)` — Fetch stock-specific news from SSR HTML
+    - `get_article_content(route)` — Fetch full article content
+    - `fetch_all(save_dir)` — Fetch all data and optionally save to directory
+    - `print_summary(data)` — Print human-readable summary
+  
+  Usage:
+    python from tradingkey_fetcher import TradingKeyFetcher
+    fetcher = TradingKeyFetcher("TSLA")
+    data = fetcher.fetch_all(save_dir="data/companies/TSLA")
+    fetcher.print_summary(data)
+  
+  CLI usage:
+    python tradingkey_fetcher.py TSLA --save data/companies/TSLA
 ---
 
 # TradingKey API Skill

@@ -12,7 +12,8 @@ This repo contains all custom-built skills for **Kars**, a personal AI assistant
 
 | Skill | Directory | Description |
 |-------|-----------|-------------|
-| **TradingKey** | `research/tradingkey/` | Stock scoring, multi-dimensional analysis, support/resistance from TradingKey API. Endpoint: `/quotes-base/diagnosis/v1/stock-score?route=nasdaq-{SYMBOL}` |
+| **TradingKey** | `research/tradingkey/` | Stock scoring, multi-dimensional analysis, support/resistance, sentiment, stock-specific news, and weekly market reports from TradingKey API. v2.1.0 with `TradingKeyFetcher` Python module. |
+| **Yahoo Finance** | `research/yahoo/` | Comprehensive Yahoo Finance data via yfinance API + Playwright web scraper — company info, analyst consensus, price targets, upgrades/downgrades, technical indicators, SEC filings, and earnings call transcripts |
 | **WallStreetCN** | `research/wallstreetcn/` | Real-time Chinese financial news from 华尔街见闻 |
 | **Sector Rotation Scan** | `sector-rotation-scan/` | US sector rotation signals and temperature indicators |
 | **Discord KOL** | `research/discord-kol/` | Discord investment KOL monitoring and YouTube transcript summarization |
@@ -147,10 +148,11 @@ The following cron jobs use these skills:
 
 When analyzing stocks, Kars uses the following pipeline:
 
-### Data Collection (all 3 mandatory)
-1. **yfinance** — Price, fundamentals, technicals (ta library)
-2. **TradingKey** — Score, multi-dimensional ratings, support/resistance, sentiment
+### Data Collection (all 4 mandatory)
+1. **Yahoo Finance (yfinance API + web scraper)** — Price, fundamentals, technicals (ta library), analyst consensus, SEC filings, earnings calls
+2. **TradingKey** — Score, multi-dimensional ratings, support/resistance, sentiment, stock-specific news
 3. **Latest news** — Google News + yfinance news
+4. **WallStreetCN** — Chinese financial news (華爾街見聞)
 
 ### Agent Frameworks (applied in order)
 1. **Lynch (PEG + Story)** — Primary for 1-year buy & hold horizon
@@ -207,10 +209,10 @@ These are upstream clones or environment-specific and NOT synced:
 
 | Package | Used By |
 |---------|---------|
-| yfinance | tradingkey, stock-analysis, sector-rotation-scan, pmcc |
-| ta | stock-analysis (RSI, MACD, Bollinger, ATR) |
+| yfinance | tradingkey, yahoo, stock-analysis, sector-rotation-scan, pmcc |
+| ta | yahoo, stock-analysis (RSI, MACD, Bollinger, ATR) |
 | beautifulsoup4 | discord-kol, wallstreetcn, website-seo |
-| playwright | facebook-page-scraper |
+| playwright | facebook-page-scraper, yahoo (web scraper) |
 | markitdown | content-to-notebooklm |
 | notebooklm-py | content-to-notebooklm |
 | fastmcp | content-to-notebooklm (MCP server) |
