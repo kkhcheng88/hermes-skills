@@ -11,6 +11,13 @@ metadata:
 
 Ad-hoc stock analysis for any US ticker. 5-layer pipeline developed through iterative testing on AXTI, TSLA, MU, POET, AAOI, PFE, LLY, INTC.
 
+Part of Karson's **Top-Down Workflow (MVP1)**:
+- **Layer 1 (Macro)** → use `reports/` daily report for Regime context before analyzing any stock
+- **Layer 2 (Sector)** → check Sector Temperature + Value Chain position before individual stock
+- **Layer 3 (Stock)** → THIS SKILL. Apply 5-layer pipeline.
+
+Full Agent Framework library: `~/Investment/agents/investors/` (11 agents as detailed .md files). Load relevant agent files for deeper analysis beyond the summary in this skill.
+
 ## Dependencies
 
 ```bash
@@ -63,6 +70,8 @@ req = urllib.request.Request(url, headers={
 })
 v = json.loads(urllib.request.urlopen(req, timeout=15).read())["value"]
 ```
+
+> **Note (2026-04-22 verified)**: The correct response key is `v['score']` (not `v['payload']`). The API returns `{"value": {"score": {"totalScore": X, ...}}}`.
 
 **Extract:**
 - `v['score']['totalScore']` — 0-10 composite
@@ -120,18 +129,68 @@ peg = fwd_pe / (earnings_growth * 100)  # if earnings_growth > 0
 - Klarman — only when VIX high / regime A
 - Eveillard — bubble check for sectors
 
-### Layer 4: News
+### Layer 4: News + Analyst Sentiment
+
+**Multi-source approach (try in order, don't stop at the first empty result):**
+
 ```python
-# yfinance news
+# 1. yfinance news (often returns N/A for small-caps)
 news = yf.Ticker("SYMBOL").news
 
-# Google News RSS
+# 2. NewsAPI (free tier: 100 req/day, register at https://newsapi.org)
+import urllib.request, json, os
+api_key = os.environ.get("NEWS_API_KEY", "a211e3c6f30f46fe86948b32c326ee71")
+url = f"https://newsapi.org/v2/everything?q={SYMBOL}+stock&apiKey={api_key}&language=en&sortBy=publishedAt&pageSize=15"
+arts = json.loads(urllib.request.urlopen(url, timeout=10).read()).get("articles", [])
+for a in arts:
+    print(f"Title: {a['title']} | Source: {a['source']['name']} | Date: {a['publishedAt'][:10]}")
+    print(f"Desc: {a.get('description','')}")
+
+# 3. Google News RSS (no API key needed)
 import xml.etree.ElementTree as ET
-url = f"https://news.google.com/rss/search?q={SYMBOL}+stock&hl=en-US&gl=US&ceid=US:en"
-root = ET.fromstring(urllib.request.urlopen(url, timeout=10).read())
+rss_url = f"https://news.google.com/rss/search?q={SYMBOL}+stock&hl=en-US&gl=US&ceid=US:en"
+root = ET.fromstring(urllib.request.urlopen(rss_url, timeout=10).read())
+for item in root.findall(".//item")[:10]:
+    print(item.find("title").text)
 ```
 
-### Layer 5: Synthesis
+**Analyst data (3-step fallback chain):**
+
+```python
+# Step 1: yfinance.info (fastest, often sufficient)
+info = yf.Ticker("SYMBOL").info
+target_mean = info.get("targetMeanPrice")
+target_high = info.get("targetHighPrice")
+target_low = info.get("targetLowPrice")
+rec_key = info.get("recommendationKey")  # e.g. "buy", "hold"
+fwd_pe = info.get("forwardPE")
+eps_current = info.get("epsCurrentYear")
+eps_forward = info.get("epsForward")
+
+# Step 2: NewsAPI for published analyst reports
+# (many financial sites publish analyst price targets as news articles)
+url2 = f"https://newsapi.org/v2/everything?q={SYMBOL}+analyst+target+price&apiKey={api_key}&language=en&sortBy=relevancy&pageSize=10"
+
+# Step 3: Web scraping (for detailed ratings breakdown)
+# Finviz: https://finviz.com/quote.ashx?t=SYMBOL  (no auth needed)
+# Extract: "Target Price" pattern, "WallStreet analysts" count, recommendation bars
+```
+
+**Small-cap / low-coverage stocks (common patterns):**
+- yfinance.news → often returns N/A or empty list
+- yfinance.info → analyst fields return N/A
+- NewsAPI → may return 0 results for obscure tickers
+- yfinance.recommendations endpoint → returns empty
+- Yahoo Finance internal API → rate-limited (429) frequently
+- Solution: Use NewsAPI as primary, web scraping as backup, accept data gaps
+
+**Analyst sentiment synthesis for moat/regime framework:**
+- Classify sentiment per moat dimension (B2/C1 etc.) rather than just overall
+- Flag: "現價 > 分析師目標價均值" as a warning signal
+- Flag: wide analyst target range ($28-$90) as high uncertainty indicator
+- Note: Small-cap stocks often have <5 analyst coverage = not statistically meaningful
+
+## Key Learnings (from testing on 8 stocks)
 Cross-reference all layers. Flag conflicts (e.g., TradingKey says buy but agents say avoid).
 
 ---

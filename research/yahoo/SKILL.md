@@ -264,8 +264,32 @@ tk_data = tk.fetch_all()
 2. **Rate limiting** — Heavy usage may trigger rate limits
 3. **Web scraper** — Requires Playwright + Chromium installation
 4. **No real-time data** — 15-minute delayed prices
-5. **Earnings transcripts** — May not be available for all stocks
-6. **SEC filings** — Only recent filings (past 3 months)
+5. **SEC filings** — Only recent filings (past 3 months)
+
+### Earnings Transcripts — IMPORTANT
+
+Yahoo Finance transcripts are powered by **Quartr** and require a **Silver or Gold subscription** to access full content. The scraper will:
+- Detect the transcript URL and fetch it
+- Return only a ~2,000-2,500 char preview (first paragraph + operator intro)
+- The full transcript is paywalled
+
+**✅ Primary source for full transcripts — Use scrap_fool.py (The Motley Fool)**:
+```bash
+cd ~/.hermes/skills/research/yahoo
+xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
+  python3 scrap_fool.py MSFT
+```
+- **Fool provides FULL transcript** (60,000+ chars vs Yahoo's 2,000-char preview)
+- Includes: CEO/CFO prepared remarks + full Q&A + 32+ key takeaways
+- Method: Playwright + Xvfb headed browser, same anti-detection as Yahoo scraper
+- Output: `data/companies/{TICKER}/fool_scraped.json`
+- **Always use Fool FIRST** when earnings transcripts are needed
+
+If full earnings transcripts are needed, consider:
+- **The Motley Fool** (scrap_fool.py) — Free, full transcript ← PRIMARY
+- **Seeking Alpha** — Free earnings transcripts (may require browser anti-detection)
+- **Microsoft IR page** — `https://www.microsoft.com/en-us/Investor/earnings.aspx` for official PDFs
+- **AlphaSense / Bloomberg** — Enterprise-grade (paid)
 
 ---
 
